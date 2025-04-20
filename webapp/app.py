@@ -19,7 +19,8 @@ logging.basicConfig(level=logging.DEBUG,
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("denode-webapp")
 
-app = Flask(__name__)
+
+app = Flask(__name__, template_folder="../templates")
 app.secret_key = os.environ.get("SESSION_SECRET", "denode-dev-key")
 metadata_store = MetadataStore(base_path="./metadata")
 
