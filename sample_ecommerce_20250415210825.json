@@ -1,0 +1,400 @@
+{
+  "customers": {
+    "columns": [
+      {
+        "name": "customer_id",
+        "type": "INTEGER",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": true
+      },
+      {
+        "name": "customer_name",
+        "type": "TEXT",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_email",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_phone",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_address",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_city",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_state",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_zipcode",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "customer_country",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "date_registered",
+        "type": "DATE",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "last_login",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      }
+    ],
+    "primary_key": {
+      "constrained_columns": [
+        "customer_id"
+      ],
+      "name": null
+    },
+    "foreign_keys": [],
+    "indexes": [],
+    "unique_constraints": [
+      {
+        "name": null,
+        "column_names": [
+          "customer_email"
+        ]
+      }
+    ]
+  },
+  "order_items": {
+    "columns": [
+      {
+        "name": "order_item_id",
+        "type": "INTEGER",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": true
+      },
+      {
+        "name": "order_id",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "product_id",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "quantity",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "price",
+        "type": "DECIMAL(10, 2)",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "subtotal",
+        "type": "DECIMAL(10, 2)",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      }
+    ],
+    "primary_key": {
+      "constrained_columns": [
+        "order_item_id"
+      ],
+      "name": null
+    },
+    "foreign_keys": [
+      {
+        "name": null,
+        "constrained_columns": [
+          "order_id"
+        ],
+        "referred_schema": null,
+        "referred_table": "orders",
+        "referred_columns": [
+          "order_id"
+        ],
+        "options": {}
+      },
+      {
+        "name": null,
+        "constrained_columns": [
+          "product_id"
+        ],
+        "referred_schema": null,
+        "referred_table": "products",
+        "referred_columns": [
+          "product_id"
+        ],
+        "options": {}
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_order_items_order",
+        "column_names": [
+          "order_id"
+        ],
+        "unique": 0,
+        "dialect_options": {}
+      }
+    ],
+    "unique_constraints": []
+  },
+  "orders": {
+    "columns": [
+      {
+        "name": "order_id",
+        "type": "INTEGER",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": true
+      },
+      {
+        "name": "customer_id",
+        "type": "INTEGER",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "order_date",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "default": "CURRENT_TIMESTAMP",
+        "is_primary_key": false
+      },
+      {
+        "name": "order_status",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "'pending'",
+        "is_primary_key": false
+      },
+      {
+        "name": "shipping_address",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "shipping_city",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "shipping_state",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "shipping_zipcode",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "shipping_country",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "payment_method",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "order_total",
+        "type": "DECIMAL(10, 2)",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      }
+    ],
+    "primary_key": {
+      "constrained_columns": [
+        "order_id"
+      ],
+      "name": null
+    },
+    "foreign_keys": [
+      {
+        "name": null,
+        "constrained_columns": [
+          "customer_id"
+        ],
+        "referred_schema": null,
+        "referred_table": "customers",
+        "referred_columns": [
+          "customer_id"
+        ],
+        "options": {}
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_orders_customer",
+        "column_names": [
+          "customer_id"
+        ],
+        "unique": 0,
+        "dialect_options": {}
+      },
+      {
+        "name": "idx_orders_date",
+        "column_names": [
+          "order_date"
+        ],
+        "unique": 0,
+        "dialect_options": {}
+      }
+    ],
+    "unique_constraints": []
+  },
+  "products": {
+    "columns": [
+      {
+        "name": "product_id",
+        "type": "INTEGER",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": true
+      },
+      {
+        "name": "product_name",
+        "type": "TEXT",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "product_description",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "product_category",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "product_subcategory",
+        "type": "TEXT",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "price",
+        "type": "DECIMAL(10, 2)",
+        "nullable": false,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "cost",
+        "type": "DECIMAL(10, 2)",
+        "nullable": true,
+        "default": "None",
+        "is_primary_key": false
+      },
+      {
+        "name": "stock_quantity",
+        "type": "INTEGER",
+        "nullable": true,
+        "default": "0",
+        "is_primary_key": false
+      },
+      {
+        "name": "is_active",
+        "type": "BOOLEAN",
+        "nullable": true,
+        "default": "1",
+        "is_primary_key": false
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMP",
+        "nullable": true,
+        "default": "CURRENT_TIMESTAMP",
+        "is_primary_key": false
+      }
+    ],
+    "primary_key": {
+      "constrained_columns": [
+        "product_id"
+      ],
+      "name": null
+    },
+    "foreign_keys": [],
+    "indexes": [
+      {
+        "name": "idx_products_category",
+        "column_names": [
+          "product_category"
+        ],
+        "unique": 0,
+        "dialect_options": {}
+      }
+    ],
+    "unique_constraints": []
+  }
+}
