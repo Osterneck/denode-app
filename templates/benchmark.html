@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2><i class="fas fa-tachometer-alt me-2"></i> Performance Benchmarking</h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    Measure the performance impact of optimization recommendations and compare execution times of different queries.
+                </p>
+                
+                {% if not db_name %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i> 
+                    No database selected. Please <a href="{{ url_for('extract') }}">extract a database schema</a> first.
+                </div>
+                {% endif %}
+                
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+                
+                <ul class="nav nav-tabs mb-4" id="benchmarkTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="quick-tab" data-bs-toggle="tab" 
+                                data-bs-target="#quick" type="button" role="tab">
+                            Quick Benchmark
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="compare-tab" data-bs-toggle="tab" 
+                                data-bs-target="#compare" type="button" role="tab">
+                            Compare Queries
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="throughput-tab" data-bs-toggle="tab" 
+                                data-bs-target="#throughput" type="button" role="tab">
+                            Throughput Test
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="benchmarkTabsContent">
+                    <!-- Quick Benchmark Tab -->
+                    <div class="tab-pane fade show active" id="quick" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <form method="POST" action="{{ url_for('benchmark', mode='quick') }}">
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-bolt me-2"></i> Single Query Performance Test
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="db_url" class="form-label">Database Connection URL</label>
+                                                <input type="text" class="form-control" id="db_url" name="db_url" 
+                                                       value="{{ db_url }}" required>
+                                                <div class="form-text">
+                                                    Connection string for your database (e.g., postgresql://user:pass@localhost/dbname)
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="query" class="form-label">SQL Query</label>
+                                                <textarea class="form-control" id="query" name="query" rows="5" required>{{ query }}</textarea>
+                                                <div class="form-text">
+                                                    The SQL query to benchmark
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                    <div class="mb-3">
+                                                        <label for="iterations" class="form-label">Iterations</label>
+                                                        <input type="number" class="form-control" id="iterations" name="iterations" 
+                                                               value="{{ iterations|default(5) }}" min="1" max="100">
+                                                        <div class="form-text">
+                                                            Number of times to run the query (avg will be calculated)
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <div class="mb-3">
+                                                        <label for="warmup" class="form-label">Warmup Runs</label>
+                                                        <input type="number" class="form-control" id="warmup" name="warmup" 
+                                                               value="{{ warmup|default(1) }}" min="0" max="10">
+                                                        <div class="form-text">
+                                                            Number of warmup runs (not counted in results)
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-play me-1"></i> Run Benchmark
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Compare Queries Tab -->
+                    <div class="tab-pane fade" id="compare" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <form method="POST" action="{{ url_for('benchmark', mode='compare') }}">
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-balance-scale me-2"></i> Compare Query Performance
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="db_url_compare" class="form-label">Database Connection URL</label>
+                                                <input type="text" class="form-control" id="db_url_compare" name="db_url" 
+                                                       value="{{ db_url }}" required>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="query1" class="form-label">Query 1</label>
+                                                <textarea class="form-control" id="query1" name="query1" rows="4" required>{{ query1 }}</textarea>
+                                                <div class="form-text">
+                                                    Original or unoptimized query
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="query2" class="form-label">Query 2</label>
+                                                <textarea class="form-control" id="query2" name="query2" rows="4" required>{{ query2 }}</textarea>
+                                                <div class="form-text">
+                                                    Alternative or optimized query
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="compare_iterations" class="form-label">Iterations per query</label>
+                                                <input type="number" class="form-control" id="compare_iterations" name="iterations" 
+                                                       value="{{ iterations|default(3) }}" min="1" max="50">
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-play me-1"></i> Run Comparison
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Throughput Test Tab -->
+                    <div class="tab-pane fade" id="throughput" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <form method="POST" action="{{ url_for('benchmark', mode='throughput') }}">
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">
+                                                <i class="fas fa-users me-2"></i> Concurrent Throughput Test
+                                            </h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="db_url_throughput" class="form-label">Database Connection URL</label>
+                                                <input type="text" class="form-control" id="db_url_throughput" name="db_url" 
+                                                       value="{{ db_url }}" required>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="throughput_query" class="form-label">SQL Query</label>
+                                                <textarea class="form-control" id="throughput_query" name="query" rows="5" required>{{ query }}</textarea>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="duration" class="form-label">Test Duration (seconds)</label>
+                                                        <input type="number" class="form-control" id="duration" name="duration" 
+                                                               value="{{ duration|default(5) }}" min="1" max="60">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label for="clients" class="form-label">Concurrent Clients</label>
+                                                        <input type="number" class="form-control" id="clients" name="clients" 
+                                                               value="{{ clients|default(5) }}" min="1" max="50">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-footer">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-play me-1"></i> Run Throughput Test
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if result %}
+                <div class="card mt-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i> Benchmark Results
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if mode == 'quick' %}
+                        <!-- Quick Benchmark Results -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-dark">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="text-muted mb-0">Average Time</h6>
+                                                <h2 class="text-info mb-0">{{ "%.2f"|format(result.avg) }}ms</h2>
+                                            </div>
+                                            <div class="text-end">
+                                                <h6 class="text-muted mb-0">Median Time</h6>
+                                                <h2 class="text-info mb-0">{{ "%.2f"|format(result.median) }}ms</h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-dark">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <h6 class="text-muted mb-0">Min Time</h6>
+                                                <h2 class="text-success mb-0">{{ "%.2f"|format(result.min) }}ms</h2>
+                                            </div>
+                                            <div class="text-end">
+                                                <h6 class="text-muted mb-0">Max Time</h6>
+                                                <h2 class="text-danger mb-0">{{ "%.2f"|format(result.max) }}ms</h2>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <h6>Execution Time Distribution</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Standard Deviation</td>
+                                        <td>{{ "%.2f"|format(result.stdev) }}ms</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Iterations</td>
+                                        <td>{{ result.iterations }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        {% elif mode == 'compare' %}
+                        <!-- Query Comparison Results -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card bg-dark mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Comparison Summary</h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <h2 class="mb-3 {% if result.percent_improvement > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if result.percent_improvement > 0 %}
+                                                <i class="fas fa-arrow-up me-1"></i>
+                                            {% else %}
+                                                <i class="fas fa-arrow-down me-1"></i>
+                                            {% endif %}
+                                            {{ "%.1f"|format(result.percent_improvement|abs) }}% 
+                                            {% if result.percent_improvement > 0 %}Improvement{% else %}Slowdown{% endif %}
+                                        </h2>
+                                        <p class="mb-0">
+                                            Absolute difference: {{ "%.2f"|format(result.absolute_improvement_ms|abs) }}ms
+                                            {% if result.absolute_improvement_ms > 0 %}faster{% else %}slower{% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Query 1 (Original)</h6>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <h3 class="text-info mb-0">{{ "%.2f"|format(result.before.avg) }}ms</h3>
+                                                <p class="text-muted small">
+                                                    Min: {{ "%.2f"|format(result.before.min) }}ms / 
+                                                    Max: {{ "%.2f"|format(result.before.max) }}ms
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card mb-3">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">Query 2 (Alternative)</h6>
+                                            </div>
+                                            <div class="card-body text-center">
+                                                <h3 class="text-info mb-0">{{ "%.2f"|format(result.after.avg) }}ms</h3>
+                                                <p class="text-muted small">
+                                                    Min: {{ "%.2f"|format(result.after.min) }}ms / 
+                                                    Max: {{ "%.2f"|format(result.after.max) }}ms
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% elif mode == 'throughput' %}
+                        <!-- Throughput Test Results -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card bg-dark mb-3">
+                                    <div class="card-body text-center">
+                                        <h2 class="display-4 text-info">{{ "%.1f"|format(result.queries_per_second) }}</h2>
+                                        <p class="lead mb-0">Queries Per Second</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card mb-3">
+                                            <div class="card-body text-center">
+                                                <h3 class="text-success mb-0">{{ result.total_queries }}</h3>
+                                                <p class="text-muted">Total Queries</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card mb-3">
+                                            <div class="card-body text-center">
+                                                <h3 class="text-info mb-0">{{ "%.2f"|format(result.avg_latency_ms) }}ms</h3>
+                                                <p class="text-muted">Average Latency</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card mb-3">
+                                            <div class="card-body text-center">
+                                                <h3 class="text-info mb-0">{{ result.concurrent_clients }}</h3>
+                                                <p class="text-muted">Concurrent Clients</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Metric</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Median Latency</td>
+                                            <td>{{ "%.2f"|format(result.median_latency_ms) }}ms</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Min Latency</td>
+                                            <td>{{ "%.2f"|format(result.min_latency_ms) }}ms</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Max Latency</td>
+                                            <td>{{ "%.2f"|format(result.max_latency_ms) }}ms</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Test Duration</td>
+                                            <td>{{ result.duration_seconds }} seconds</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
