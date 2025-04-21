@@ -25,7 +25,15 @@
                 {% endif %}
                 
                 <form method="POST" enctype="multipart/form-data" class="mb-4">
-                    <div class="card mb-4">
+                    
+{% if is_sqlite %}
+<div class="alert alert-info mt-3">
+  <strong>SQLite detected:</strong> SQLite databases don’t generate logs automatically.
+  <br>Want help creating a sample log file? <a href="/generate_sqlite_log" class="btn btn-sm btn-outline-primary ms-2">Click here</a>
+</div>
+{% endif %}
+
+<div class="card mb-4">
                         <div class="card-header bg-primary text-white">
                             <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Query Analysis Options</h5>
                         </div>
