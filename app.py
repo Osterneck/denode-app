@@ -40,7 +40,6 @@ def extract():
         try:
             # Get database connection URL
             db_url = request.form.get('db_url')
-                  
             db_name = request.form.get('db_name')
             
             if not db_url:
@@ -50,6 +49,7 @@ def extract():
             else:
                 # Extract schema
                 result = extract_schema(db_url)
+                result['db_url'] = db_url
                 
                 # Save to metadata store
                 if metadata_store.save_schema(result, db_name):
@@ -79,12 +79,6 @@ def analyze():
         schema = metadata_store.load_latest_schema(db_name)
         if schema:
             schema_loaded = True
-    is_sqlite = False
-    if schema and isinstance(schema, dict):
-        db_url = schema.get('db_url') or session.get('db_url', '')
-
-        if db_url.startswith('sqlite:///'):
-            is_sqlite = True
     
     if request.method == 'POST':
         try:
@@ -149,7 +143,7 @@ def analyze():
             logger.error(f"Error analyzing queries: {str(e)}")
             error = f"Error analyzing queries: {str(e)}"
     
-    return render_template('analyze.html', is_sqlite=is_sqlite, db_name=db_name, schema_loaded=schema_loaded, result=result, error=error)
+    return render_template('analyze.html', db_name=db_name, schema_loaded=schema_loaded, result=result, error=error)
 
 @app.route('/recommendations', methods=['GET', 'POST'])
 def recommendations():
@@ -372,39 +366,3 @@ def benchmark():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-
-@app.route('/generate_sqlite_log')
-def generate_sqlite_log():
-    import sqlite3
-    from datetime import datetime
-
-    log_file = './data/sqlite_query_log.sql'
-    db_path = './db/dummy_data.db'
-
-    # Ensure the db file exists before attempting query
-    if not os.path.exists(db_path):
-        return "SQLite DB not found at ./db/dummy_data.db", 404
-
-    # Clear previous log
-    with open(log_file, "w") as f:
-        f.write(f"-- SQLite Log generated: {datetime.utcnow()} UTC\n\n")
-
-    def trace_callback(statement):
-        with open(log_file, "a") as f:
-            f.write(statement + ";\n")
-
-    conn = sqlite3.connect(db_path)
-    conn.set_trace_callback(trace_callback)
-    cursor = conn.cursor()
-
-    # Run some dummy queries
-    cursor.execute("SELECT * FROM users LIMIT 10")
-    cursor.execute("SELECT * FROM users WHERE email LIKE '%gmail%'")
-    cursor.execute("SELECT COUNT(*) FROM users")
-    cursor.execute("SELECT * FROM users ORDER BY name ASC")
-
-    conn.commit()
-    conn.close()
-
-    return redirect('/data/sqlite_query_log.sql')
