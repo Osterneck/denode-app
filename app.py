@@ -40,6 +40,7 @@ def extract():
         try:
             # Get database connection URL
             db_url = request.form.get('db_url')
+                  
             db_name = request.form.get('db_name')
             
             if not db_url:
@@ -80,7 +81,8 @@ def analyze():
             schema_loaded = True
     is_sqlite = False
     if schema and isinstance(schema, dict):
-        db_url = schema.get('db_url', '')
+        db_url = schema.get('db_url') or session.get('db_url', '')
+
         if db_url.startswith('sqlite:///'):
             is_sqlite = True
     
