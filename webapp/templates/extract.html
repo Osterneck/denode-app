@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-search me-2"></i> Extract Database Schema</h2>
+            </div>
+            <div class="card-body">
+                {% if db_type == 'sqlite' %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-database me-2"></i> <strong>SQLite database detected!</strong> DEnode will optimize your database for improved performance.
+                </div>
+                {% endif %}
+                
+                <form method="POST" class="mb-4">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="db-type" class="form-label">Database Type</label>
+                            <select class="form-select" id="db-type" name="db-type">
+                                <option value="" selected disabled>Select Database Type</option>
+                                <option value="postgresql" {% if db_type == 'postgresql' %}selected{% endif %}>PostgreSQL</option>
+                                <option value="mysql" {% if db_type == 'mysql' %}selected{% endif %}>MySQL</option>
+                                <option value="sqlite" {% if db_type == 'sqlite' %}selected{% endif %}>SQLite</option>
+                                <option value="mssql" {% if db_type == 'mssql' %}selected{% endif %}>Microsoft SQL Server</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label for="db_url" class="form-label">Database Connection URL</label>
+                            <input type="text" class="form-control" id="db_url" name="db_url" 
+                                   placeholder="e.g., postgresql://username:password@localhost:5432/database" required>
+                            <div class="form-text">
+                                Connection string for SQLAlchemy. Format depends on the database type.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="db_name" class="form-label">Database Name Identifier</label>
+                        <input type="text" class="form-control" id="db_name" name="db_name" 
+                               placeholder="e.g., my_project_db" required>
+                        <div class="form-text">
+                            A name to identify this database project in DEnode.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i> Extract Schema
+                    </button>
+                </form>
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                {% if result %}
+                <h3 class="mt-4 mb-3">Schema Extraction Results</h3>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Schema Overview</h5>
+                        <p class="text-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            Successfully extracted schema with {{ result|length }} tables.
+                        </p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Table</th>
+                                        <th>Columns</th>
+                                        <th>Primary Key</th>
+                                        <th>Foreign Keys</th>
+                                        <th>Indexes</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for table_name, table_info in result.items() %}
+                                    <tr>
+                                        <td><code>{{ table_name }}</code></td>
+                                        <td>{{ table_info.columns|length }}</td>
+                                        <td>
+                                            {% if table_info.primary_key.constrained_columns %}
+                                            <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                            <span class="badge bg-warning">No</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if table_info.foreign_keys|length > 0 %}
+                                            <span class="badge bg-info">{{ table_info.foreign_keys|length }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if table_info.indexes|length > 0 %}
+                                            <span class="badge bg-info">{{ table_info.indexes|length }}</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-info toggle-columns-btn" 
+                                                    data-target="table-{{ table_name|replace('.', '_') }}">
+                                                Show Columns
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    <!-- Columns - hidden by default -->
+                                    {% for column in table_info.columns %}
+                                    <tr class="table-{{ table_name|replace('.', '_') }}-columns d-none">
+                                        <td class="text-muted ps-4">
+                                            <small>↳</small> <code>{{ column.name }}</code>
+                                        </td>
+                                        <td class="text-muted" colspan="4">
+                                            <code>{{ column.type }}</code>
+                                            {% if column.is_primary_key %}
+                                            <span class="badge bg-success">PK</span>
+                                            {% endif %}
+                                            {% if not column.nullable %}
+                                            <span class="badge bg-warning">NOT NULL</span>
+                                            {% endif %}
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <span></span> <!-- Empty space for alignment -->
+                    <a href="{{ url_for('analyze', db_name=db_name) }}" class="btn btn-primary">
+                        Continue to Query Analysis <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .toggle-columns-btn {
+        min-width: 120px;
+    }
+</style>
+{% endblock %}

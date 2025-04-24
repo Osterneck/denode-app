@@ -3,6 +3,8 @@ import sys
 import json
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session
 import logging
+from datetime import datetime, date
+from decimal import Decimal
 
 # Add the parent directory to the path so we can import modules
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -19,9 +21,27 @@ logging.basicConfig(level=logging.DEBUG,
                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("denode-webapp")
 
-
-app = Flask(__name__, template_folder="../templates")
+app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "denode-dev-key")
+
+# Custom JSON serialization for complex objects
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif hasattr(obj, '__dict__'):
+            return obj.__dict__
+        elif hasattr(obj, 'to_dict'):
+            return obj.to_dict()
+        elif str(type(obj)) == "<class 'jinja2.runtime.Undefined'>":
+            return None
+        elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, list, dict)):
+            return list(obj)
+        return super().default(obj)
+
+app.json_encoder = CustomJSONEncoder
 metadata_store = MetadataStore(base_path="./metadata")
 
 @app.route('/')
@@ -29,6 +49,11 @@ def index():
     """Home page"""
     # Get list of databases
     databases = metadata_store.list_databases()
+    
+    # Debug log all database names exactly as they're stored
+    for db in databases:
+        logger.info(f"Available database in store: '{db}'")
+    
     return render_template('index.html', databases=databases)
 
 @app.route('/extract', methods=['GET', 'POST'])
@@ -36,6 +61,7 @@ def extract():
     """Schema extraction page"""
     result = None
     error = None
+    db_type = None
     
     if request.method == 'POST':
         try:
@@ -48,6 +74,11 @@ def extract():
             elif not db_name:
                 error = "Database name identifier is required"
             else:
+                # Detect database type before extraction
+                from db.schema_extractor import detect_database_type
+                db_type = detect_database_type(db_url)
+                logger.info(f"Detected database type: {db_type}")
+                
                 # Extract schema
                 result = extract_schema(db_url)
                 
@@ -56,6 +87,7 @@ def extract():
                     flash(f"Schema extracted and saved successfully for '{db_name}'", "success")
                     # Set session variable for current database
                     session['current_db'] = db_name
+                    session['db_type'] = db_type
                     # Redirect to the analyze page
                     return redirect(url_for('analyze', db_name=db_name))
         
@@ -63,11 +95,12 @@ def extract():
             logger.error(f"Error extracting schema: {str(e)}")
             error = f"Error extracting schema: {str(e)}"
     
-    return render_template('extract.html', result=result, error=error)
+    return render_template('extract.html', result=result, error=error, db_type=db_type)
 
 @app.route('/analyze', methods=['GET', 'POST'])
-def analyze():
-    """Query analysis page"""
+@app.route('/analyze/<path:db_name>', methods=['GET', 'POST'])
+def analyze(db_name=None):
+    """Query analysis page with support for complex db names"""
     result = None
     error = None
     db_name = request.args.get('db_name', session.get('current_db'))
@@ -143,11 +176,15 @@ def analyze():
             logger.error(f"Error analyzing queries: {str(e)}")
             error = f"Error analyzing queries: {str(e)}"
     
-    return render_template('analyze.html', db_name=db_name, schema_loaded=schema_loaded, result=result, error=error)
+    # Include db_type from session in the template
+    db_type = session.get('db_type')
+    return render_template('analyze.html', db_name=db_name, schema_loaded=schema_loaded, 
+                          result=result, error=error, db_type=db_type)
 
 @app.route('/recommendations', methods=['GET', 'POST'])
-def recommendations():
-    """Recommendations page"""
+@app.route('/recommendations/<path:db_name>', methods=['GET', 'POST'])
+def recommendations(db_name=None):
+    """Recommendations page with support for complex db names"""
     db_name = request.args.get('db_name', session.get('current_db'))
     
     # Try to load schema and query analysis from the store
@@ -181,43 +218,126 @@ def recommendations():
             logger.error(f"Error generating recommendations: {str(e)}")
             error = f"Error generating recommendations: {str(e)}"
     
+    # Save the recommendations in the session for debug purposes
+    if recommendations:
+        session['current_recommendations'] = recommendations
+        # Dump the first recommendation to see its structure
+        if recommendations and len(recommendations) > 0:
+            logger.info(f"First recommendation structure: {recommendations[0]}")
+    
     return render_template('recommendations.html', db_name=db_name, 
                           recommendations=recommendations, error=error)
 
-@app.route('/generate_sql/<db_name>/<table>/<action>')
+@app.route('/generate_sql/<path:db_name>/<table>/<action>')
 def generate_sql_page(db_name, table, action):
-    """Generate SQL implementation page"""
+    """Generate SQL implementation page with support for complex db names"""
     try:
+        # URL decode the database name to handle special characters
+        from urllib.parse import unquote
+        decoded_db_name = unquote(db_name)
+        
+        # Debug information
+        logger.info(f"Generating SQL for db_name={decoded_db_name}, table={table}, action={action}")
+        
         # Load schema and recommendations
-        schema = metadata_store.load_latest_schema(db_name)
-        recommendations = metadata_store.load_latest_recommendations(db_name)
-        
+        schema = metadata_store.load_latest_schema(decoded_db_name)
         if not schema:
-            return jsonify({"error": "Schema not found"}), 404
+            logger.error(f"Schema not found for db_name={decoded_db_name}")
+            error_msg = f"Schema not found for database '{decoded_db_name}'"
+            return render_template('error.html', error=error_msg, 
+                                 title="Schema Not Found", 
+                                 db_name=decoded_db_name)
         
+        logger.info(f"Successfully loaded schema with {len(schema)} tables")
+        
+        # Try to get recommendations from the session first
+        recommendations = session.get('current_recommendations', None)
+        
+        # If not in session, try loading from the metadata store
         if not recommendations:
-            return jsonify({"error": "Recommendations not found"}), 404
+            recommendations = metadata_store.load_latest_recommendations(decoded_db_name)
+            
+        if not recommendations:
+            logger.error(f"Recommendations not found for db_name={decoded_db_name}")
+            error_msg = f"Recommendations not found for database '{decoded_db_name}'"
+            return render_template('error.html', error=error_msg, 
+                                 title="Recommendations Not Found", 
+                                 db_name=decoded_db_name)
+        
+        logger.info(f"Successfully loaded {len(recommendations)} recommendations")
         
         # Find the specific recommendation
         recommendation = next((r for r in recommendations if r['table'] == table and r['action'] == action), None)
         
         if not recommendation:
-            return jsonify({"error": "Recommendation not found"}), 404
+            logger.error(f"No recommendation found for table={table}, action={action}")
+            error_msg = f"No recommendation found for table '{table}' with action '{action}'"
+            return render_template('error.html', error=error_msg, 
+                                 title="Recommendation Not Found", 
+                                 db_name=decoded_db_name)
+        
+        logger.info(f"Found matching recommendation: {recommendation}")
         
         # Generate SQL plan
         sql_plan = generate_sql(recommendation, schema)
+        logger.info(f"Generated SQL plan: {sql_plan}")
         
-        return render_template('sql_plan.html', db_name=db_name, plan=sql_plan)
+        return render_template('sql_plan.html', db_name=decoded_db_name, plan=sql_plan)
     
     except Exception as e:
         logger.error(f"Error generating SQL: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-@app.route('/api/schemas/<db_name>')
-def api_get_schema(db_name):
-    """API to get schema for a database"""
+        
+# Add a direct SQL generation route for easier debugging
+@app.route('/sql_direct/<path:db_name>')
+def sql_direct(db_name):
+    """Generate SQL directly for debugging - supports complex db names"""
     try:
-        schema = metadata_store.load_latest_schema(db_name)
+        # URL decode the database name to handle special characters
+        from urllib.parse import unquote
+        decoded_db_name = unquote(db_name)
+        
+        # Debug information
+        logger.info(f"Generating direct SQL for db_name={decoded_db_name}")
+        
+        # Load schema
+        schema = metadata_store.load_latest_schema(decoded_db_name)
+        if not schema:
+            logger.error(f"Schema not found for db_name={decoded_db_name}")
+            error_msg = f"Schema not found for database '{decoded_db_name}'"
+            return render_template('error.html', error=error_msg, 
+                                 title="Schema Not Found", 
+                                 db_name=decoded_db_name)
+            
+        # Create a simple recommendation
+        table_name = next(iter(schema.keys()))
+        recommendation = {
+            "table": table_name,
+            "action": "INDEX",
+            "confidence": 80,
+            "reason": f"Debug recommendation for table {table_name}",
+            "impact": "MEDIUM",
+            "effort": "LOW"
+        }
+        
+        # Generate SQL plan
+        sql_plan = generate_sql(recommendation, schema)
+        
+        return render_template('sql_plan.html', db_name=decoded_db_name, plan=sql_plan)
+        
+    except Exception as e:
+        logger.error(f"Error in direct SQL generation: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/schemas/<path:db_name>')
+def api_get_schema(db_name):
+    """API to get schema for a database - supports complex db names"""
+    try:
+        # URL decode the database name to handle special characters
+        from urllib.parse import unquote
+        decoded_db_name = unquote(db_name)
+        
+        schema = metadata_store.load_latest_schema(decoded_db_name)
         if not schema:
             return jsonify({"error": "Schema not found"}), 404
         
@@ -226,11 +346,15 @@ def api_get_schema(db_name):
         logger.error(f"API error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/analysis/<db_name>')
+@app.route('/api/analysis/<path:db_name>')
 def api_get_analysis(db_name):
-    """API to get query analysis for a database"""
+    """API to get query analysis for a database - supports complex db names"""
     try:
-        analysis = metadata_store.load_latest_query_analysis(db_name)
+        # URL decode the database name to handle special characters
+        from urllib.parse import unquote
+        decoded_db_name = unquote(db_name)
+        
+        analysis = metadata_store.load_latest_query_analysis(decoded_db_name)
         if not analysis:
             return jsonify({"error": "Analysis not found"}), 404
         
@@ -239,11 +363,15 @@ def api_get_analysis(db_name):
         logger.error(f"API error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/recommendations/<db_name>')
+@app.route('/api/recommendations/<path:db_name>')
 def api_get_recommendations(db_name):
-    """API to get recommendations for a database"""
+    """API to get recommendations for a database - supports complex db names"""
     try:
-        recommendations = metadata_store.load_latest_recommendations(db_name)
+        # URL decode the database name to handle special characters
+        from urllib.parse import unquote
+        decoded_db_name = unquote(db_name)
+        
+        recommendations = metadata_store.load_latest_recommendations(decoded_db_name)
         if not recommendations:
             return jsonify({"error": "Recommendations not found"}), 404
         
