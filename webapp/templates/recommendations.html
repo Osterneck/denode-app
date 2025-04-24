@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-lightbulb me-2"></i> Optimization Recommendations</h2>
+            </div>
+            <div class="card-body">
+                {% if not db_name %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i> 
+                    No database selected. Please <a href="{{ url_for('extract') }}">extract a database schema</a> first.
+                </div>
+                {% endif %}
+                
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+                
+                {% if not recommendations and db_name %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    No recommendations are currently available for this database. 
+                    Please generate recommendations using the button below.
+                </div>
+                
+                <form method="POST" class="text-center my-4">
+                    <button type="submit" class="btn btn-lg btn-primary">
+                        <i class="fas fa-magic me-1"></i> Generate Recommendations
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if recommendations %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    <strong>{{ recommendations|length }} optimization recommendations</strong> 
+                    have been generated for <code>{{ db_name }}</code>.
+                </div>
+                
+                <div class="recommendations-container">
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for rec in recommendations %}
+                        <div class="col">
+                            <div class="card h-100 recommendation-card">
+                                <div class="card-header
+                                    {% if rec.action == 'DENORMALIZE' %}bg-primary
+                                    {% elif rec.action == 'NORMALIZE' %}bg-success
+                                    {% elif rec.action == 'INDEX' %}bg-info
+                                    {% elif rec.action == 'PARTITION' %}bg-warning
+                                    {% endif %}">
+                                    <h5 class="card-title text-white mb-0">
+                                        <i class="fas 
+                                            {% if rec.action == 'DENORMALIZE' %}fa-th
+                                            {% elif rec.action == 'NORMALIZE' %}fa-code-branch
+                                            {% elif rec.action == 'INDEX' %}fa-search-plus
+                                            {% elif rec.action == 'PARTITION' %}fa-table
+                                            {% endif %} me-2"></i>
+                                        {{ rec.action }}
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">Table: <code>{{ rec.table }}</code></h6>
+                                    <p class="card-text">{{ rec.reason }}</p>
+                                    
+                                    <div class="recommendation-details">
+                                        <div class="mb-3">
+                                            <span class="badge
+                                                {% if rec.confidence >= 80 %}bg-success
+                                                {% elif rec.confidence >= 50 %}bg-info
+                                                {% else %}bg-warning{% endif %}">
+                                                {{ rec.confidence }}% confidence
+                                            </span>
+                                            
+                                            <span class="badge
+                                                {% if rec.impact == 'HIGH' %}bg-success
+                                                {% elif rec.impact == 'MEDIUM' %}bg-info
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ rec.impact }} impact
+                                            </span>
+                                            
+                                            <span class="badge
+                                                {% if rec.effort == 'LOW' %}bg-success
+                                                {% elif rec.effort == 'MEDIUM' %}bg-info
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ rec.effort }} effort
+                                            </span>
+                                        </div>
+                                        
+                                        {% if rec.details %}
+                                        <div class="recommendation-details mt-2">
+                                            <strong>Details:</strong>
+                                            <ul class="text-muted">
+                                                {% for detail in rec.details %}
+                                                <li>{{ detail }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if rec.trade_offs %}
+                                        <div class="recommendation-tradeoffs mt-2">
+                                            <strong>Trade-offs:</strong>
+                                            <ul class="text-muted">
+                                                {% for trade_off in rec.trade_offs %}
+                                                <li>{{ trade_off }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <!-- Add debug comments in the HTML -->
+                                    <!-- DB: {{ db_name }} / Table: {{ rec.table }} / Action: {{ rec.action }} -->
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('generate_sql_page', db_name=db_name, table=rec.table, action=rec.action) }}" 
+                                           class="btn btn-primary">
+                                            <i class="fas fa-code me-1"></i> Generate SQL
+                                        </a>
+                                        <a href="/sql_direct/{{ db_name }}" class="btn btn-outline-secondary">
+                                            <i class="fas fa-wrench me-1"></i> Debug SQL
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('analyze', db_name=db_name) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Query Analysis
+                    </a>
+                    
+                    <form method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="fas fa-sync-alt me-1"></i> Regenerate Recommendations
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

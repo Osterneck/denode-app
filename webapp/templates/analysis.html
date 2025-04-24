@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-file-alt me-2"></i> Query Analysis</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="mb-4">
+                    <div class="mb-3">
+                        <label for="log_file" class="form-label">Upload SQL Query Log File</label>
+                        <input type="file" class="form-control" id="log_file" name="log_file" required>
+                        <div class="form-text">
+                            Upload a text file containing SQL queries, one per line.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="db_name" class="form-label">Database Name</label>
+                        <input type="text" class="form-control" id="db_name" name="db_name" value="{{ db_name }}" required>
+                        <div class="form-text">
+                            Provide a name to identify this database project.
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-cogs me-1"></i> Analyze Queries
+                    </button>
+                </form>
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                {% if result %}
+                <h3 class="mt-4 mb-3">Analysis Results</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h4>Query Statistics</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="stat-card text-center p-3">
+                                            <div class="stat-value">{{ result.query_counts.total }}</div>
+                                            <div class="stat-label">Total Queries</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="stat-card text-center p-3">
+                                            <div class="stat-value">{{ result.read_write_ratio|round(2) }}</div>
+                                            <div class="stat-label">Read/Write Ratio</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-3">
+                                        <div class="small-stat text-center p-2">
+                                            <div class="stat-value small">{{ result.query_counts.select }}</div>
+                                            <div class="stat-label small">SELECT</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="small-stat text-center p-2">
+                                            <div class="stat-value small">{{ result.query_counts.insert }}</div>
+                                            <div class="stat-label small">INSERT</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="small-stat text-center p-2">
+                                            <div class="stat-value small">{{ result.query_counts.update }}</div>
+                                            <div class="stat-label small">UPDATE</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="small-stat text-center p-2">
+                                            <div class="stat-value small">{{ result.query_counts.delete }}</div>
+                                            <div class="stat-label small">DELETE</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h4>Join Analysis</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="stat-card text-center p-3">
+                                            <div class="stat-value">{{ result.join_analysis.total_joins }}</div>
+                                            <div class="stat-label">Total Joins</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="small-stat text-center p-2">
+                                                    <div class="stat-value small">{{ result.join_analysis.inner_joins }}</div>
+                                                    <div class="stat-label small">INNER Joins</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-md-6">
+                                                <div class="small-stat text-center p-2">
+                                                    <div class="stat-value small">{{ result.join_analysis.left_joins }}</div>
+                                                    <div class="stat-label small">LEFT</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="small-stat text-center p-2">
+                                                    <div class="stat-value small">{{ result.join_analysis.right_joins }}</div>
+                                                    <div class="stat-label small">RIGHT</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h4>Table Access Frequency</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Table</th>
+                                        <th>Access Count</th>
+                                        <th>Percentage</th>
+                                        <th>Access Distribution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for table, count in result.table_access|dictsort(by='value', reverse=true) %}
+                                    <tr>
+                                        <td><code>{{ table }}</code></td>
+                                        <td>{{ count }}</td>
+                                        <td>{{ (count / result.query_counts.total * 100)|round(1) }}%</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar" role="progressbar" 
+                                                    style="width: {{ (count / result.query_counts.total * 100)|round(1) }}%"
+                                                    aria-valuenow="{{ (count / result.query_counts.total * 100)|round(1) }}" 
+                                                    aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {% if result.examples %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h4>Query Examples</h4>
+                    </div>
+                    <div class="card-body">
+                        <ul class="nav nav-tabs" id="queryTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="joins-tab" data-bs-toggle="tab" data-bs-target="#joins" type="button" role="tab">Joins</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="selects-tab" data-bs-toggle="tab" data-bs-target="#selects" type="button" role="tab">Selects</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="writes-tab" data-bs-toggle="tab" data-bs-target="#writes" type="button" role="tab">Writes</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content mt-3" id="queryTabsContent">
+                            <div class="tab-pane fade show active" id="joins" role="tabpanel">
+                                {% if result.examples.joins %}
+                                <div class="code-examples">
+                                    {% for query in result.examples.joins %}
+                                    <pre class="p-3 bg-dark text-light rounded"><code>{{ query }}</code></pre>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No JOIN queries found</p>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade" id="selects" role="tabpanel">
+                                {% if result.examples.selects %}
+                                <div class="code-examples">
+                                    {% for query in result.examples.selects %}
+                                    <pre class="p-3 bg-dark text-light rounded"><code>{{ query }}</code></pre>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <p class="text-muted">No SELECT queries found</p>
+                                {% endif %}
+                            </div>
+                            <div class="tab-pane fade" id="writes" role="tabpanel">
+                                <div class="code-examples">
+                                    {% for query in result.examples.inserts %}
+                                    <pre class="p-3 bg-dark text-light rounded"><code>{{ query }}</code></pre>
+                                    {% endfor %}
+                                    {% for query in result.examples.updates %}
+                                    <pre class="p-3 bg-dark text-light rounded"><code>{{ query }}</code></pre>
+                                    {% endfor %}
+                                    {% if not result.examples.inserts and not result.examples.updates %}
+                                    <p class="text-muted">No INSERT or UPDATE queries found</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('extract') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Schema Extraction
+                    </a>
+                    <a href="{{ url_for('recommendations', db_name=db_name) }}" class="btn btn-primary">
+                        Generate Recommendations <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stat-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: var(--bs-info);
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--bs-secondary);
+    }
+    .small-stat {
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 6px;
+    }
+    .small-stat .stat-value {
+        font-size: 1.5rem;
+    }
+    .code-examples pre {
+        margin-bottom: 15px;
+        overflow: auto;
+        max-height: 200px;
+    }
+</style>
+{% endblock %}

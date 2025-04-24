@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h1 class="card-title mb-4">
+            <i class="fas fa-database me-2"></i>
+            DEnode - Database Schema Optimization Tool
+        </h1>
+        <p class="lead">
+            Analyze database schemas and query patterns to recommend optimization strategies.
+        </p>
+        <hr>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3><i class="fas fa-cogs me-2"></i>Features</h3>
+                <ul class="list-group">
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-search me-3"></i>
+                        <div>
+                            <strong>Schema Extraction</strong>
+                            <p class="mb-0 text-muted">Extract database schema information using SQLAlchemy</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-file-alt me-3"></i>
+                        <div>
+                            <strong>Query Log Analysis</strong>
+                            <p class="mb-0 text-muted">Parse and analyze SQL query patterns and frequencies</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-tachometer-alt me-3"></i>
+                        <div>
+                            <strong>Performance Analysis</strong>
+                            <p class="mb-0 text-muted">Analyze query performance with EXPLAIN</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-lightbulb me-3"></i>
+                        <div>
+                            <strong>Optimization Recommendations</strong>
+                            <p class="mb-0 text-muted">Get recommendations for schema optimization</p>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex align-items-center">
+                        <i class="fas fa-code me-3"></i>
+                        <div>
+                            <strong>SQL Generation</strong>
+                            <p class="mb-0 text-muted">Generate SQL statements to implement recommendations</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h3><i class="fas fa-tasks me-2"></i>Workflow</h3>
+                <div class="card bg-dark">
+                    <div class="card-body">
+                        <div class="workflow-step">
+                            <span class="workflow-number">1</span>
+                            <div>
+                                <h5>Extract Database Schema</h5>
+                                <p>Connect to your database and extract schema information</p>
+                                <a href="{{ url_for('extract') }}" class="btn btn-sm btn-primary">
+                                    Start Here <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="workflow-arrow text-center my-2">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="workflow-step">
+                            <span class="workflow-number">2</span>
+                            <div>
+                                <h5>Analyze Query Patterns</h5>
+                                <p>Upload SQL query logs to identify patterns and frequencies</p>
+                            </div>
+                        </div>
+                        <div class="workflow-arrow text-center my-2">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="workflow-step">
+                            <span class="workflow-number">3</span>
+                            <div>
+                                <h5>Get Optimization Recommendations</h5>
+                                <p>Receive recommendations for schema improvements</p>
+                            </div>
+                        </div>
+                        <div class="workflow-arrow text-center my-2">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+                        <div class="workflow-step">
+                            <span class="workflow-number">4</span>
+                            <div>
+                                <h5>Generate SQL Implementation</h5>
+                                <p>Get SQL code to implement the recommended changes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if databases %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h3>Recent Database Projects</h3>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for db in databases %}
+            <a href="{{ url_for('recommendations', db_name=db) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-database me-2"></i>
+                    <strong>{{ db }}</strong>
+                </div>
+                <span class="badge bg-primary rounded-pill">View</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .workflow-step {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+    .workflow-number {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background-color: var(--bs-primary);
+        color: white;
+        font-weight: bold;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+    .workflow-arrow {
+        margin-left: 17px;
+        color: var(--bs-secondary);
+    }
+</style>
+{% endblock %}

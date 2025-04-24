@@ -1,0 +1,128 @@
+/* DEnode - Custom styling */
+
+/* Main containers */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.content {
+    flex: 1;
+}
+
+/* Footer styling */
+.footer {
+    margin-top: auto;
+}
+
+/* Custom card and box styling */
+.explanation-box {
+    padding: 1.5rem;
+    background-color: rgba(13, 110, 253, 0.1);
+    border-radius: 0.5rem;
+    border-left: 4px solid var(--bs-primary);
+}
+
+.caution-box {
+    padding: 1.5rem;
+    background-color: rgba(255, 193, 7, 0.1);
+    border-radius: 0.5rem;
+    border-left: 4px solid var(--bs-warning);
+}
+
+.sql-container {
+    border-radius: 0.375rem;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+/* Table styling for schema display */
+.table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+/* Badges and buttons */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.8em;
+}
+
+/* Animation for schema extraction */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading-indicator {
+    animation: pulse 1.5s infinite;
+}
+
+/* Custom tooltip styles */
+.custom-tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.custom-tooltip .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--bs-dark);
+    color: var(--bs-light);
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.custom-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Recommendation card styles */
+.recommendation-card {
+    transition: transform 0.2s;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Utility classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Syntax highlighting for SQL */
+pre code {
+    display: block;
+    padding: 0.5em;
+    overflow-x: auto;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+    .workflow-step {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .workflow-number {
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+    
+    .workflow-arrow {
+        margin-left: 0;
+    }
+}
