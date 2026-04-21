@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="fas fa-code me-2"></i> 
+                    SQL Implementation Plan: 
+                    <span class="badge 
+                        {% if plan.action == 'DENORMALIZE' %}bg-primary
+                        {% elif plan.action == 'NORMALIZE' %}bg-success
+                        {% elif plan.action == 'INDEX' %}bg-info
+                        {% elif plan.action == 'PARTITION' %}bg-warning
+                        {% endif %}">
+                        {{ plan.action }}
+                    </span>
+                    for <code>{{ plan.table }}</code>
+                </h2>
+                <a href="{{ url_for('recommendations', db_name=db_name) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Recommendations
+                </a>
+            </div>
+            <div class="card-body">
+                {% if plan.error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ plan.error }}
+                </div>
+                {% else %}
+                
+                <div class="explanation-box mb-4">
+                    <h4><i class="fas fa-info-circle me-2"></i> Explanation</h4>
+                    <p>{{ plan.explanation }}</p>
+                </div>
+                
+                {% if plan.caution %}
+                <div class="caution-box mb-4">
+                    <h4><i class="fas fa-exclamation-triangle me-2"></i> Caution</h4>
+                    <p>{{ plan.caution }}</p>
+                </div>
+                {% endif %}
+                
+                <h3 class="mt-4 mb-3">SQL Implementation</h3>
+                
+                {% for statement in plan.statements %}
+                <div class="sql-statement mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <h5>
+                            <span class="badge 
+                                {% if statement.type == 'view' %}bg-primary
+                                {% elif statement.type == 'create_table' %}bg-success
+                                {% elif statement.type == 'index' %}bg-info
+                                {% elif statement.type == 'materialized' %}bg-warning
+                                {% elif statement.type == 'partition' %}bg-danger
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ statement.type|capitalize }}
+                            </span>
+                            {% if statement.name %}
+                            <code>{{ statement.name }}</code>
+                            {% endif %}
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary copy-sql-btn">
+                            <i class="fas fa-copy me-1"></i> Copy SQL
+                        </button>
+                    </div>
+                    
+                    <div class="sql-container">
+                        <pre class="p-3 bg-dark text-light rounded"><code>{{ statement.sql }}</code></pre>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Implementation Tip:</strong> Always test these SQL statements in a development or staging environment before applying them to production.
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('recommendations', db_name=db_name) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Recommendations
+                    </a>
+                    
+                    <div class="btn-group">
+                        {% for statement in plan.statements %}
+                        <button class="btn btn-primary copy-all-sql-btn" data-index="{{ loop.index0 }}">
+                            <i class="fas fa-download me-1"></i> Download SQL #{{ loop.index }}
+                        </button>
+                        {% if not loop.last %}&nbsp;{% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add download handlers for SQL statements
+    document.querySelectorAll('.copy-all-sql-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'));
+            const statements = {{ plan.statements|tojson }};
+            
+            if (index >= 0 && index < statements.length) {
+                const statement = statements[index];
+                const sql = statement.sql;
+                const fileName = `${statement.type}_${statement.name || 'statement'}.sql`;
+                
+                // Create a download link
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(sql));
+                element.setAttribute('download', fileName);
+                element.style.display = 'none';
+                
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+

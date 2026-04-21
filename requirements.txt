@@ -1,0 +1,8 @@
+flask
+flask-login
+werkzeug
+gunicorn
+SQLAlchemy
+stripe
+psycopg2-binary
+pymysql

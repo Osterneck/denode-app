@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download SQL Query Log</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        body {
+            padding: 50px;
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+            font-weight: 500;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        pre {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        h1, h2, h3 {
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>SQL Query Log Sample File</h1>
+            <p class="lead">
+                This sample SQL query log file contains various queries that could be used to test DEnode's analysis capabilities.
+                Download this file and then upload it in the "Analyze Query Logs" section to see how DEnode analyzes query patterns.
+            </p>
+            <a href="/sample_query_log.sql" download class="btn btn-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download me-2" viewBox="0 0 16 16">
+                    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+                Download SQL Query Log
+            </a>
+
+            <h3 class="mt-4">How to Use This File</h3>
+            <ol>
+                <li>Click the download button above to download the SQL query log file</li>
+                <li>Go to the DEnode application</li>
+                <li>Click on "Analyze Query Logs" in the navigation menu</li>
+                <li>Upload this file in the file upload section</li>
+                <li>Click "Analyze Queries" to see DEnode's analysis results</li>
+            </ol>
+
+            <h3 class="mt-4">Sample of Included Queries</h3>
+            <pre>-- SELECT queries
+2025-04-20 10:15:32.456 UTC [12345] LOG:  EXECUTE: SELECT * FROM users WHERE id = 5;
+2025-04-20 10:15:33.123 UTC [12345] LOG:  EXECUTE: SELECT username, email FROM users WHERE active = true ORDER BY created_at DESC LIMIT 10;
+
+-- JOIN patterns
+2025-04-20 10:16:12.678 UTC [12345] LOG:  EXECUTE: SELECT o.id, o.order_date, u.username FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status = 'pending';
+
+-- INSERT statements
+2025-04-20 10:20:45.678 UTC [12345] LOG:  EXECUTE: INSERT INTO users (username, email, password_hash, created_at) VALUES ('new_user', 'new@example.com', 'hash123', CURRENT_TIMESTAMP);</pre>
+        </div>
+    </div>
+</body>
+</html>

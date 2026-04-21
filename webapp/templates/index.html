@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Plan status banner for free users -->
+{% if not current_user.is_pro %}
+<div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Free Plan:</strong>
+        {% if current_user.schema_count >= 1 %}
+            You've used your 1 free schema analysis. <strong>Upgrade to Pro</strong> for unlimited.
+        {% else %}
+            You have <strong>1 free schema analysis</strong> remaining.
+        {% endif %}
+    </div>
+    <a href="{{ url_for('pricing') }}" class="btn btn-sm btn-warning text-dark fw-bold ms-3">Upgrade to Pro — $24/mo</a>
+</div>
+{% endif %}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h1 class="card-title mb-2 fw-bold">
+            <i class="fas fa-database me-2 text-primary"></i>DEnode
+        </h1>
+        <p class="lead text-muted mb-4">Paste a database URL. Get instant schema analysis, normalization/denormalization recommendations, and the SQL to implement them.</p>
+        <hr>
+        <div class="row mt-4 g-3">
+            <div class="col-md-3">
+                <div class="card bg-dark h-100">
+                    <div class="card-body text-center p-3">
+                        <div class="fs-1 mb-2">🔍</div>
+                        <h6 class="fw-bold">1. Extract Schema</h6>
+                        <p class="text-muted small mb-3">Connect via URL — PostgreSQL, MySQL, SQLite, MSSQL</p>
+                        <a href="{{ url_for('extract') }}" class="btn btn-sm btn-primary">Start Here</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark h-100">
+                    <div class="card-body text-center p-3">
+                        <div class="fs-1 mb-2">📊</div>
+                        <h6 class="fw-bold">2. Analyze Queries</h6>
+                        <p class="text-muted small mb-3">Upload query logs to identify patterns and hot paths</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark h-100">
+                    <div class="card-body text-center p-3">
+                        <div class="fs-1 mb-2">💡</div>
+                        <h6 class="fw-bold">3. Get Recommendations</h6>
+                        <p class="text-muted small mb-3">Normalization, denormalization, indexing, partitioning</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-dark h-100">
+                    <div class="card-body text-center p-3">
+                        <div class="fs-1 mb-2">⚡</div>
+                        <h6 class="fw-bold">4. Get the SQL</h6>
+                        <p class="text-muted small mb-3">Ready-to-run DDL to implement every recommendation</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if databases %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-folder-open me-2"></i>Your Database Projects</h5>
+        <a href="{{ url_for('extract') }}" class="btn btn-sm btn-primary">
+            <i class="fas fa-plus me-1"></i>New Analysis
+        </a>
+    </div>
+    <div class="list-group list-group-flush">
+        {% for db in databases %}
+        <a href="{{ url_for('recommendations', db_name=db) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <div><i class="fas fa-database me-2 text-primary"></i><strong>{{ db }}</strong></div>
+            <span class="badge bg-primary rounded-pill">View Recommendations</span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div class="card border-dashed text-center p-5">
+    <div class="fs-1 mb-3">🚀</div>
+    <h4>Ready to optimize your first database?</h4>
+    <p class="text-muted">Connect your database and get actionable recommendations in under 60 seconds.</p>
+    <a href="{{ url_for('extract') }}" class="btn btn-primary btn-lg mt-2">Extract Your First Schema</a>
+</div>
+{% endif %}
+
+{% endblock %}

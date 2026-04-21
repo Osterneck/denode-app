@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-file-alt me-2"></i> Analyze Query Logs</h2>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    Upload your database query logs to analyze query patterns and identify optimization opportunities.
+                </p>
+                
+                {% if not schema_loaded %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i> 
+                    No database schema loaded. Please <a href="{{ url_for('extract') }}">extract a database schema</a> first for more comprehensive analysis.
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle me-1"></i> 
+                    Database schema successfully loaded. You can proceed with query analysis.
+                </div>
+                {% endif %}
+                
+                <form method="POST" enctype="multipart/form-data" class="mb-4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Query Analysis Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="db_name" class="form-label">Database Name Identifier</label>
+                                <input type="text" class="form-control" id="db_name" name="db_name" 
+                                    value="{{ db_name }}" placeholder="e.g., my_project_db" required>
+                                <div class="form-text">
+                                    A name to identify this database project in DEnode.
+                                </div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_sample_log" name="use_sample_log" value="yes">
+                                    <label class="form-check-label" for="use_sample_log">
+                                        <strong>Use sample query log file</strong>
+                                    </label>
+                                </div>
+                                <div class="form-text ms-4">
+                                    Use the provided sample e-commerce query log file for demonstration purposes.
+                                </div>
+                            </div>
+                            
+                            <div id="upload-section">
+                                <div class="mb-3">
+                                    <label for="log_file" class="form-label">Or upload your own SQL Query Log File</label>
+                                    <div class="input-group">
+                                        <input type="file" class="form-control" id="log_file" name="log_file" accept=".log,.txt,.sql">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-file-code"></i>
+                                        </span>
+                                    </div>
+                                    <div class="form-text">
+                                        Upload a query log file from your database server. Supported formats: PostgreSQL logs, MySQL slow query logs, or general SQL query lists.
+                                    </div>
+                                    <p class="mt-2" id="file-name-display">No file selected</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search me-1"></i> Analyze Queries
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const useSampleCheck = document.getElementById('use_sample_log');
+                        const uploadSection = document.getElementById('upload-section');
+                        const fileInput = document.getElementById('log_file');
+                        
+                        useSampleCheck.addEventListener('change', function() {
+                            if (this.checked) {
+                                uploadSection.style.opacity = '0.5';
+                                fileInput.required = false;
+                            } else {
+                                uploadSection.style.opacity = '1';
+                                fileInput.required = true;
+                            }
+                        });
+                        
+                        // File input display update
+                        fileInput.addEventListener('change', function() {
+                            const fileNameDisplay = document.getElementById('file-name-display');
+                            if (this.files.length > 0) {
+                                fileNameDisplay.textContent = this.files[0].name;
+                                fileNameDisplay.classList.add('text-success');
+                            } else {
+                                fileNameDisplay.textContent = 'No file selected';
+                                fileNameDisplay.classList.remove('text-success');
+                            }
+                        });
+                    });
+                </script>
+
+                {% if error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i> {{ error }}
+                </div>
+                {% endif %}
+
+                {% if result %}
+                <h3 class="mt-4 mb-3">Query Analysis Results</h3>
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-pie me-2"></i> Query Pattern Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-dark h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4 text-info">{{ result.query_count }}</h1>
+                                        <p class="text-muted mb-0">Total Queries Analyzed</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4 text-success">{{ result.tables|length }}</h1>
+                                        <p class="text-muted mb-0">Tables Referenced</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-dark h-100">
+                                    <div class="card-body text-center">
+                                        <h1 class="display-4 text-warning">{{ result.query_types.SELECT|default(0) }}</h1>
+                                        <p class="text-muted mb-0">SELECT Queries</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4">Query Type Distribution</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Query Type</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                        <th>Visualization</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for query_type, count in result.query_types.items() %}
+                                    <tr>
+                                        <td><code>{{ query_type }}</code></td>
+                                        <td>{{ count }}</td>
+                                        <td>{{ (count / result.query_count * 100)|round(1) }}%</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar
+                                                    {% if query_type == 'SELECT' %}bg-success
+                                                    {% elif query_type == 'INSERT' %}bg-info
+                                                    {% elif query_type == 'UPDATE' %}bg-warning
+                                                    {% elif query_type == 'DELETE' %}bg-danger
+                                                    {% else %}bg-secondary{% endif %}"
+                                                    role="progressbar" 
+                                                    style="width: {{ (count / result.query_count * 100)|round(1) }}%" 
+                                                    aria-valuenow="{{ (count / result.query_count * 100)|round(1) }}" 
+                                                    aria-valuemin="0" 
+                                                    aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h5 class="mt-4">Top Tables Accessed</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Table</th>
+                                        <th>Query Count</th>
+                                        <th>Reads</th>
+                                        <th>Writes</th>
+                                        <th>Read/Write Ratio</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for table, stats in result.tables.items() %}
+                                    <tr>
+                                        <td><code>{{ table }}</code></td>
+                                        <td>{{ stats.count }}</td>
+                                        <td>{{ stats.reads }}</td>
+                                        <td>{{ stats.writes }}</td>
+                                        <td>
+                                            {% if stats.writes > 0 %}
+                                                {{ (stats.reads / stats.writes)|round(1) }}
+                                            {% else %}
+                                                <span class="badge bg-info">Read Only</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if result.joins %}
+                        <h5 class="mt-4">Common Join Patterns</h5>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Tables Joined</th>
+                                        <th>Count</th>
+                                        <th>Percentage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for join, count in result.joins.items() %}
+                                    <tr>
+                                        <td><code>{{ join }}</code></td>
+                                        <td>{{ count }}</td>
+                                        <td>{{ (count / result.query_types.SELECT * 100)|round(1) }}% of SELECTs</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                        
+                        {% if result.get('advanced_analysis') %}
+                        <h5 class="mt-4">Advanced Analysis</h5>
+                        <div class="alert alert-info">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Insights:</strong> {{ result.advanced_analysis.summary }}
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Observation</th>
+                                        <th>Details</th>
+                                        <th>Severity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for observation in result.advanced_analysis.observations %}
+                                    <tr>
+                                        <td>{{ observation.title }}</td>
+                                        <td>{{ observation.details }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                {% if observation.severity == 'high' %}bg-danger
+                                                {% elif observation.severity == 'medium' %}bg-warning
+                                                {% else %}bg-info{% endif %}">
+                                                {{ observation.severity|capitalize }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('extract', db_name=db_name) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Schema Extraction
+                    </a>
+                    <a href="{{ url_for('recommendations', db_name=db_name) }}" class="btn btn-primary">
+                        Continue to Recommendations <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

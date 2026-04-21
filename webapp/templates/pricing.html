@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mb-5 mt-3">
+    <h1 class="fw-bold">Simple, Transparent Pricing</h1>
+    <p class="lead text-muted">No enterprise contracts. No per-seat fees. Just fast database optimization.</p>
+</div>
+
+<div class="row justify-content-center g-4 mb-5">
+    <!-- Free -->
+    <div class="col-md-4">
+        <div class="card h-100 border-secondary">
+            <div class="card-body p-4">
+                <h4 class="fw-bold">Free</h4>
+                <div class="display-5 fw-bold my-3">$0<span class="fs-6 text-muted fw-normal">/mo</span></div>
+                <p class="text-muted">Perfect for trying DEnode on your first project.</p>
+                <hr>
+                <ul class="list-unstyled mb-4">
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>1 schema analysis</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Full normalization &amp; denormalization output</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>SQL command generation</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Query log analysis</li>
+                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Performance benchmarking</li>
+                    <li class="mb-2 text-muted"><i class="fas fa-times me-2"></i>Unlimited schemas</li>
+                    <li class="mb-2 text-muted"><i class="fas fa-times me-2"></i>API access</li>
+                </ul>
+                {% if current_user.is_authenticated %}
+                    {% if not current_user.is_pro %}
+                    <div class="btn btn-outline-secondary w-100 disabled">Current Plan</div>
+                    {% else %}
+                    <a href="{{ url_for('manage_billing') }}" class="btn btn-outline-secondary w-100">Manage Billing</a>
+                    {% endif %}
+                {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100">Get Started Free</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pro -->
+    <div class="col-md-4">
+        <div class="card h-100 border-warning shadow-lg position-relative">
+            <div class="position-absolute top-0 start-50 translate-middle">
+                <span class="badge bg-warning text-dark px-3 py-2">Most Popular</span>
+            </div>
+            <div class="card-body p-4 pt-5">
+                <h4 class="fw-bold">Pro</h4>
+                <div class="display-5 fw-bold my-3">$24<span class="fs-6 text-muted fw-normal">/mo</span></div>
+                <p class="text-muted">For developers and teams who need ongoing optimization.</p>
+                <hr>
+                <ul class="list-unstyled mb-4">
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i><strong>Unlimited schema analyses</strong></li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>Full normalization &amp; denormalization output</li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>SQL command generation</li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>Query log analysis</li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>Performance benchmarking</li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>REST API access</li>
+                    <li class="mb-2"><i class="fas fa-check text-warning me-2"></i>Priority support</li>
+                </ul>
+                {% if current_user.is_authenticated %}
+                    {% if current_user.is_pro %}
+                    <div class="btn btn-warning w-100 disabled text-dark fw-bold">Current Plan</div>
+                    {% else %}
+                    <form action="{{ url_for('create_checkout_session') }}" method="POST">
+                        <button type="submit" class="btn btn-warning w-100 text-dark fw-bold">
+                            <i class="fas fa-star me-2"></i>Upgrade to Pro
+                        </button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                <a href="{{ url_for('register') }}" class="btn btn-warning w-100 text-dark fw-bold">
+                    <i class="fas fa-star me-2"></i>Get Pro
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mb-5">
+    <div class="col-md-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-body p-4">
+                <h5 class="fw-bold mb-3"><i class="fas fa-question-circle me-2 text-primary"></i>Frequently Asked Questions</h5>
+                <div class="mb-3">
+                    <p class="fw-semibold mb-1">What databases does DEnode support?</p>
+                    <p class="text-muted small mb-0">PostgreSQL, MySQL, SQLite, and Microsoft SQL Server — anything SQLAlchemy can connect to via a URL.</p>
+                </div>
+                <div class="mb-3">
+                    <p class="fw-semibold mb-1">Do you store my database credentials?</p>
+                    <p class="text-muted small mb-0">No. Connection URLs are used only during the extraction request and are never persisted. Only the extracted schema metadata is stored.</p>
+                </div>
+                <div class="mb-3">
+                    <p class="fw-semibold mb-1">Can I cancel anytime?</p>
+                    <p class="text-muted small mb-0">Yes. Cancel from the billing portal at any time. You keep Pro access until the end of your billing period.</p>
+                </div>
+                <div>
+                    <p class="fw-semibold mb-1">What does "schema analysis" mean on the free plan?</p>
+                    <p class="text-muted small mb-0">One full analysis cycle: schema extraction + query log analysis + recommendations + SQL generation for one database. Upgrade for unlimited databases.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
